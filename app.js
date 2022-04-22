@@ -3,14 +3,32 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
-
-const connectionString = "mongodb+srv://admin:admin@cluster0.u0wf3.mongodb.net/learnMongo?retryWrites=true&w=majority";
+var passport = require('passport');
+var LocalStrategy = require('passport-local').Strategy;
+passport.use(new LocalStrategy(
+  function(username, password, done) {
+    Account.findOne({ username: username }, function (err, user) {
+      if (err) { return done(err); }
+      if (!user) {
+        return done(null, false, { message: 'Incorrect username.' });
+      }
+      else if (!user.validPassword(password)) {
+        return done(null, false, { message: 'Incorrect password.' });
+      }
+      else {
+        return done(null, user);
+      }
+    });
+  })
+);
+const connectionString = "mongodb+srv://admin:admin@cluster0.zomms.mongodb.net/learnMongo?retryWrites=true&w=majority";
 mongoose = require('mongoose');
 mongoose.connect(connectionString,
   { useNewUrlParser: true, useUnifiedTopology: true });
 
 var Costume = require("./models/costume");
 var Mobile = require("./models/mobile");
+var dovesRouter= require('./routes/doves');
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 var mobilesRouter = require('./routes/mobiles');
@@ -27,15 +45,30 @@ app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
+app.use(require('express-session')({
+  secret: 'keyboard cat',
+  resave: false,
+  saveUninitialized: false
+}));
+app.use(passport.initialize());
+app.use(passport.session());
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
-app.use('/mobile', mobilesRouter);
 app.use('/mobiles', mobilesRouter);
+app.use('/doves', dovesRouter);
 app.use('/addmods', addmodsRouter);
 app.use('/selector', selectorRouter)
 app.use('/resource', resourceRouter);
+
+// passport config
+// Use the existing connection
+// The Account model
+var Account =require('./models/account');
+passport.use(new LocalStrategy(Account.authenticate()));
+passport.serializeUser(Account.serializeUser());
+passport.deserializeUser(Account.deserializeUser());
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
@@ -87,25 +120,25 @@ async function recreateDB() {
 // Delete everything in Mobile
   await Mobile.deleteMany();
 
-  let instance5 = new Mobile({ mobile_brand: "Iphone", mobile_color: '11 max pro', mobile_cost: 650 });
+  let instance5 = new Mobile({ mobile_brand: "Iphone", mobile_color: '13 max pro', mobile_cost: 6205 });
   instance5.save(function (err, doc) {
     if (err) return console.error(err);
     console.log("First object saved in Mobile")
   });
 
-  let instance6 = new Mobile({ mobile_brand: "Huwayi", mobile_color: 'p6', mobile_cost: 750 });
+  let instance6 = new Mobile({ mobile_brand: "Samsung", mobile_color: 'Note 3', mobile_cost: 5207 });
   instance6.save(function (err, doc) {
     if (err) return console.error(err);
     console.log("Second object saved in Mobile")
   });
 
-  let instance7 = new Mobile({ mobile_brand: "sony", mobile_color: 'xperia', mobile_cost: 900 });
+  let instance7 = new Mobile({ mobile_brand: "One plus", mobile_color: '9 pro', mobile_cost: 4034 });
   instance7.save(function (err, doc) {
     if (err) return console.error(err);
     console.log("Third object saved in Mobile")
   });
 
-  let instance8 = new Mobile({ mobile_brand: "LG", mobile_color: 'G8', mobile_cost: 500 });
+  let instance8 = new Mobile({ mobile_brand: "Nokia", mobile_color: 'XR 20', mobile_cost: 1950 });
   instance8.save(function (err, doc) {
     if (err) return console.error(err);
     console.log("Fourth object saved in Mobile")
